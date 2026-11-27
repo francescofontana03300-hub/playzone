@@ -734,7 +734,7 @@ function stopCarSoccer(){
 async function carSoccerGame(){
   stopCarSoccer();
   title.textContent="🚗⚽ Car Soccer 3D";
-  content.innerHTML='<div id="carSoccerWrap"><div id="carSoccerHud"><span id="csScore">🔵 0 — 0 🔴</span><span id="csTime">01:30</span><span id="csBoost">TURBO: 100%</span></div><div id="carSoccerCanvas" aria-label="Arena tridimensionale Car Soccer"></div><div id="carSoccerControls"><button data-cs="left">◀ STERZA</button><button data-cs="right">STERZA ▶</button><button data-cs="boost">⚡ TURBO</button><button data-cs="jump">⬆ SALTO</button><button data-cs="reverse">◀ INDIETRO</button></div><p id="carSoccerHelp">PC: W/S per accelerare, A/D per sterzare, SPAZIO per saltare, SHIFT per turbo. Smartphone: tieni premuti i pulsanti. Segna nella porta rossa!</p><p id="csMessage">Partita pronta! Premi W o il pulsante per partire.</p><button onclick="carSoccerRestart()">↻ NUOVA PARTITA</button></div>';
+  content.innerHTML='<div id="carSoccerWrap"><div id="carSoccerHud"><span id="csScore">🔵 0 — 0 🔴</span><span id="csTime">01:30</span><span id="csBoost">TURBO: 100%</span></div><div id="carSoccerCanvas" aria-label="Arena tridimensionale Car Soccer"></div><div id="carSoccerControls"><button data-cs="left">◀ STERZA</button><button data-cs="right">STERZA ▶</button><button data-cs="accelerate">▲ ACCELERA</button><button data-cs="boost">⚡ TURBO</button><button data-cs="jump">⬆ SALTO</button><button data-cs="reverse">▼ RETROMARCIA</button></div><p id="carSoccerHelp">PC: W/S per accelerare, A/D per sterzare, SPAZIO per saltare, SHIFT per turbo. Smartphone: tieni premuti i pulsanti. Segna nella porta rossa!</p><p id="csMessage">Partita pronta! Premi W o il pulsante per partire.</p><button onclick="carSoccerRestart()">↻ NUOVA PARTITA</button></div>';
   const host=document.getElementById("carSoccerCanvas");
   try{
     const THREE=await import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js");
@@ -818,7 +818,7 @@ function csLoop(now){
   const T=csThree,dt=Math.min(.04,(now-csLast)/1000);csLast=now;csClock+=dt;
   if(csSeconds>0){
     csSeconds=Math.max(0,csSeconds-dt);
-    const forward=csKeys.KeyW||csKeys.ArrowUp||csTouch.jump===false&&false;
+    const forward=csKeys.KeyW||csKeys.ArrowUp||csTouch.accelerate;
     const reverse=csKeys.KeyS||csKeys.ArrowDown||csTouch.reverse;
     const left=csKeys.KeyA||csKeys.ArrowLeft||csTouch.left;
     const right=csKeys.KeyD||csKeys.ArrowRight||csTouch.right;
