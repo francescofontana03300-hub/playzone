@@ -301,7 +301,7 @@ footer a { color: #a78bfa; }
   </button>
 
   <div class="stats">
-    <div><strong>3</strong><small>Giochi</small></div>
+    <div><strong>4</strong><small>Giochi</small></div>
     <div><strong>100%</strong><small>Gratis</small></div>
     <div><strong>24/7</strong><small>Online</small></div>
   </div>
@@ -318,7 +318,7 @@ footer a { color: #a78bfa; }
     <button class="category active" data-filter="all">Tutti</button>
     <button class="category" data-filter="arcade">Arcade</button>
     <button class="category" data-filter="brain">Logica</button>
-    <button class="category" data-filter="skill">Abilità</button>
+    <button class="category" data-filter="skill">Abilità</button>\n    <button class="category" data-filter="football">Calcio</button>
   </div>
 
   <div class="games" id="gameList">
@@ -398,7 +398,7 @@ function openGame(type) {
 
   if (type === "reaction") reactionGame();
   if (type === "number") numberGame();
-  if (type === "click") clickGame();
+  if (type === "click") clickGame();\n  if (type === "football") footballGame();
 
   area.scrollIntoView({behavior:"smooth", block:"start"});
 }
@@ -555,7 +555,76 @@ function makeClick() {
   count.textContent = clicks;
 }
 
-document.getElementById("search").addEventListener("input", filterGames);
+
+const footballPlayers = [
+  {name:"Lionel Messi", wiki:"Lionel_Messi", clues:["È argentino.","Ha vinto il Mondiale nel 2022.","Ha giocato molti anni nel Barcellona."], level:"Facile"},
+  {name:"Cristiano Ronaldo", wiki:"Cristiano_Ronaldo", clues:["È portoghese.","Ha giocato nel Real Madrid e nella Juventus.","È famoso per il numero 7."], level:"Facile"},
+  {name:"Kylian Mbappé", wiki:"Kylian_Mbappé", clues:["È francese.","Ha vinto il Mondiale nel 2018.","È noto per la sua velocità."], level:"Facile"},
+  {name:"Erling Haaland", wiki:"Erling_Haaland", clues:["È norvegese.","Gioca nel Manchester City.","È un centravanti molto prolifico."], level:"Media"},
+  {name:"Luka Modrić", wiki:"Luka_Modrić", clues:["È croato.","Ha vinto il Pallone d'Oro nel 2018.","Ha giocato a lungo nel Real Madrid."], level:"Media"},
+  {name:"Neymar", wiki:"Neymar", clues:["È brasiliano.","Ha giocato nel Barcellona e nel PSG.","È noto per dribbling e fantasia."], level:"Media"},
+  {name:"Zlatan Ibrahimović", wiki:"Zlatan_Ibrahimović", clues:["È svedese.","Ha giocato in Serie A con più squadre.","È famoso per i gol spettacolari."], level:"Difficile"},
+  {name:"Andrea Pirlo", wiki:"Andrea_Pirlo", clues:["È italiano.","Ha vinto il Mondiale nel 2006.","Era un centrocampista regista."], level:"Difficile"},
+  {name:"Ronaldinho", wiki:"Ronaldinho", clues:["È brasiliano.","Ha vinto il Pallone d'Oro nel 2005.","È famoso per il suo sorriso e la tecnica."], level:"Difficile"},
+  {name:"Gianluigi Buffon", wiki:"Gianluigi_Buffon", clues:["È italiano.","Ha vinto il Mondiale nel 2006.","È uno dei portieri più celebri di sempre."], level:"Difficile"}
+];
+let footballOrder = [], footballIndex = 0, footballScore = 0, footballAttempts = 3, footballCurrent = null;
+function footballGame() {
+  title.textContent = "⚽ Indovina il Calciatore";
+  footballOrder = footballPlayers.map((_,i)=>i).sort(()=>Math.random()-.5);
+  footballIndex = 0; footballScore = 0;
+  showFootballRound();
+}
+async function showFootballRound() {
+  if (footballIndex >= footballOrder.length) {
+    content.innerHTML = '<h3>🏆 Partita completata!</h3><p>Punteggio finale: '+footballScore+'/'+footballPlayers.length+'</p><button onclick="footballGame()">RIGIOCA</button>';
+    return;
+  }
+  footballCurrent = footballPlayers[footballOrder[footballIndex]];
+  footballAttempts = 3;
+  content.innerHTML = '<p>Calciatore '+(footballIndex+1)+' di '+footballPlayers.length+' · Difficoltà: '+footballCurrent.level+'</p><div id="footballPhoto" style="height:230px;background:#090914;border-radius:12px;display:grid;place-items:center;overflow:hidden;margin:12px 0"><span>Caricamento foto…</span></div><p id="footballClue">💡 '+footballCurrent.clues[0]+'</p><p id="footballAttempts">Tentativi rimasti: 3</p><input id="footballAnswer" type="text" placeholder="Nome del calciatore" aria-label="Nome del calciatore" style="width:100%;text-align:left"><button onclick="checkFootballAnswer()">CONFERMA</button><button onclick="nextFootballClue()">ALTRO INDIZIO</button><p id="footballFeedback" aria-live="polite"></p><p>Punti: '+footballScore+'</p>';
+  const photo = document.getElementById("footballPhoto");
+  try {
+    const response = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(footballCurrent.wiki));
+    const data = await response.json();
+    if (data.thumbnail && data.thumbnail.source) {
+      photo.innerHTML = '<img id="footballImg" alt="Foto del calciatore da indovinare" src="'+data.thumbnail.source+'" style="width:100%;height:100%;object-fit:contain;filter:blur(16px);transition:filter .3s"><small style="position:absolute;background:#090914cc;padding:5px;border-radius:6px">Foto oscurata</small>';
+    } else photo.textContent = "Foto non disponibile: usa gli indizi!";
+  } catch(e) { photo.textContent = "Foto non disponibile: usa gli indizi!"; }
+}
+function nextFootballClue() {
+  const used = 3-footballAttempts;
+  if (used < 2) {
+    footballAttempts--;
+    document.getElementById("footballClue").textContent = "💡 "+footballCurrent.clues[3-footballAttempts-1];
+    document.getElementById("footballAttempts").textContent = "Tentativi rimasti: "+footballAttempts;
+    const img = document.getElementById("footballImg");
+    if (img) img.style.filter = "blur("+Math.max(0,16-footballAttempts*5)+"px)";
+  }
+}
+function checkFootballAnswer() {
+  const input = document.getElementById("footballAnswer");
+  const feedback = document.getElementById("footballFeedback");
+  if (!input.value.trim()) { feedback.textContent = "Scrivi un nome prima di confermare."; return; }
+  const norm = v => v.toLocaleLowerCase("it").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z ]/g,"").trim().replace(/\s+/g," ");
+  if (norm(input.value) === norm(footballCurrent.name)) {
+    footballScore += footballAttempts;
+    const img = document.getElementById("footballImg"); if (img) img.style.filter = "none";
+    feedback.textContent = "🎉 Esatto! Era "+footballCurrent.name+".";
+    input.disabled = true;
+    setTimeout(()=>{footballIndex++;showFootballRound();},1400);
+  } else {
+    footballAttempts--;
+    document.getElementById("footballAttempts").textContent = "Tentativi rimasti: "+footballAttempts;
+    feedback.textContent = footballAttempts > 0 ? "Non è corretto, riprova!" : "La risposta era "+footballCurrent.name+".";
+    if (footballAttempts <= 0) {
+      const img = document.getElementById("footballImg"); if (img) img.style.filter = "none";
+      input.disabled = true;
+      setTimeout(()=>{footballIndex++;showFootballRound();},1800);
+    }
+  }
+}
+\ndocument.getElementById("search").addEventListener("input", filterGames);
 
 let activeFilter = "all";
 
