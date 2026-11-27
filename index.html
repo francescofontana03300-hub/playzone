@@ -285,6 +285,12 @@ footer a { color: #a78bfa; }
 #fpsControls {display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
 #fpsControls button {min-width:105px;min-height:48px;font-weight:900}
 #fpsHelp {font-size:13px;color:#b8c5d1}
+#carSoccerWrap{max-width:900px;margin:12px auto;color:#e5e7eb}
+#carSoccerHud{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:900;margin:8px 0}
+#carSoccerCanvas{display:block;width:100%;height:auto;aspect-ratio:16/10;border:2px solid #536477;border-radius:12px;background:#102033;touch-action:none}
+#carSoccerControls{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+#carSoccerControls button{min-width:76px;min-height:48px;font-weight:900;touch-action:none}
+#carSoccerHelp{font-size:12px;color:#b8c5d1;line-height:1.5}
 </style>
 </head>
 
@@ -308,7 +314,7 @@ footer a { color: #a78bfa; }
   </button>
 
   <div class="stats">
-    <div><strong>4</strong><small>Giochi</small></div>
+    <div><strong>6</strong><small>Giochi</small></div>
     <div><strong>100%</strong><small>Gratis</small></div>
     <div><strong>24/7</strong><small>Online</small></div>
   </div>
@@ -382,6 +388,16 @@ footer a { color: #a78bfa; }
       </div>
     </article>
 
+
+    <article class="game-card" data-category="arcade">
+      <div class="game-image">🚗⚽</div>
+      <div class="game-info">
+        <h3>Car Soccer 3D</h3>
+        <p>Guida la tua auto, usa il turbo e segna contro il bot!</p>
+        <button class="play-button" onclick="openGame('carsoccer')">GIOCA ORA</button>
+      </div>
+    </article>
+
   </div>
 
   <div class="empty" id="empty">Nessun gioco trovato.</div>
@@ -427,12 +443,14 @@ function openGame(type) {
   if (type === "click") clickGame();
   if (type === "football") footballGame();
   if (type === "fps") fpsGame();
+  if (type === "carsoccer") carSoccerGame();
 
   area.scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 function closeGame() {
   stopFpsGame();
+  stopCarSoccer();
   clearTimeout(timer);
   clearTimeout(gameTimeout);
   area.style.display = "none";
@@ -697,6 +715,158 @@ function fpsFire(){
  if(hit>=0){fpsScore+=10;fpsTargets.splice(hit,1);fpsTargets.push({x:Math.random()*.8+.1,y:Math.random()*.45+.15,z:Math.random()*.5+.5,dx:(Math.random()-.5)*.24,dy:(Math.random()-.5)*.12,phase:Math.random()*6});document.getElementById("fpsMsg").textContent="✨ Bersaglio centrato! +10 punti";}
  else document.getElementById("fpsMsg").textContent="Mancato! Sposta il mirino e riprova.";
  document.getElementById("fpsScore").textContent="PUNTI: "+fpsScore;fpsDraw();
+}
+
+
+/* CAR SOCCER 3D — arena e modelli originali */
+let csRenderer=null, csScene=null, csCamera=null, csFrame=0, csRunning=false;
+let csThree=null, csCar=null, csBot=null, csBall=null, csClock=null;
+let csKeys={}, csTouch={}, csScore=[0,0], csSeconds=90, csLast=0, csVelocity=0, csBotVelocity=0;
+let csCleanup=[];
+function stopCarSoccer(){
+  csRunning=false;
+  if(csFrame) cancelAnimationFrame(csFrame);
+  csFrame=0;
+  csCleanup.forEach(fn=>{try{fn();}catch(e){}});
+  csCleanup=[];
+  if(csRenderer){csRenderer.dispose();csRenderer=null;}
+}
+async function carSoccerGame(){
+  stopCarSoccer();
+  title.textContent="🚗⚽ Car Soccer 3D";
+  content.innerHTML='<div id="carSoccerWrap"><div id="carSoccerHud"><span id="csScore">🔵 0 — 0 🔴</span><span id="csTime">01:30</span><span id="csBoost">TURBO: 100%</span></div><div id="carSoccerCanvas" aria-label="Arena tridimensionale Car Soccer"></div><div id="carSoccerControls"><button data-cs="left">◀ STERZA</button><button data-cs="right">STERZA ▶</button><button data-cs="boost">⚡ TURBO</button><button data-cs="jump">⬆ SALTO</button><button data-cs="reverse">◀ INDIETRO</button></div><p id="carSoccerHelp">PC: W/S per accelerare, A/D per sterzare, SPAZIO per saltare, SHIFT per turbo. Smartphone: tieni premuti i pulsanti. Segna nella porta rossa!</p><p id="csMessage">Partita pronta! Premi W o il pulsante per partire.</p><button onclick="carSoccerRestart()">↻ NUOVA PARTITA</button></div>';
+  const host=document.getElementById("carSoccerCanvas");
+  try{
+    const THREE=await import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js");
+    if(!document.getElementById("carSoccerCanvas"))return;
+    csThree=THREE;
+    csScene=new THREE.Scene();csScene.background=new THREE.Color(0x101b31);csScene.fog=new THREE.Fog(0x101b31,65,125);
+    csCamera=new THREE.PerspectiveCamera(65,host.clientWidth/(host.clientWidth*.625),.1,180);
+    csRenderer=new THREE.WebGLRenderer({antialias:true});
+    csRenderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));csRenderer.setSize(host.clientWidth,host.clientWidth*.625,false);
+    csRenderer.shadowMap.enabled=true;csRenderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    host.appendChild(csRenderer.domElement);
+    csScene.add(new THREE.HemisphereLight(0xb9dcff,0x26334a,2));
+    const sun=new THREE.DirectionalLight(0xffffff,2.1);sun.position.set(-18,35,12);sun.castShadow=true;csScene.add(sun);
+    const mat=(color,rough=.7,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
+    const turf=mat(0x16734c), dark=mat(0x123b34), white=mat(0xeaf5ff), blue=mat(0x168cff,.35,.35), red=mat(0xff4545,.35,.3), black=mat(0x101522,.35,.25), ballMat=mat(0xf5f5f0,.4,.05);
+    const floor=new THREE.Mesh(new THREE.BoxGeometry(36,.8,54),turf);floor.position.y=-.5;floor.receiveShadow=true;csScene.add(floor);
+    for(let i=0;i<9;i++){const stripe=new THREE.Mesh(new THREE.BoxGeometry(4,.012,53),mat(i%2?0x16734c:0x1b8055));stripe.position.set(-16+i*4,.01,0);csScene.add(stripe);}
+    function box(w,h,d,x,y,z,m){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;csScene.add(o);return o;}
+    // Pareti perimetrali e vetri alti
+    box(36,2,1,0,.7,-27,dark);box(36,2,1,0,.7,27,dark);
+    box(1,2,54,-18,.7,0,dark);box(1,2,54,18,.7,0,dark);
+    const glass=new THREE.MeshStandardMaterial({color:0x7bcfff,transparent:true,opacity:.13,roughness:.2});
+    box(36,8,.35,0,5,-27,glass);box(36,8,.35,0,5,27,glass);box(.35,8,54,-18,5,0,glass);box(.35,8,54,18,5,0,glass);
+    // Linee del campo
+    function line(x1,z1,x2,z2){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const o=new THREE.Mesh(new THREE.BoxGeometry(.12,.025,len),white);o.position.set((x1+x2)/2,.035,(z1+z2)/2);o.rotation.y=Math.atan2(dx,dz);csScene.add(o);}
+    line(-17,0,17,0);const circle=new THREE.Mesh(new THREE.TorusGeometry(5,.07,8,64),white);circle.rotation.x=Math.PI/2;circle.position.y=.05;csScene.add(circle);
+    // Porte aperte con pali e traversa
+    function goal(z,color){const gm=mat(color,.35,.2);const depth=z<0?1:-1;box(10,.35,.5,0,2.4,z,gm);box(.35,4,1,-5,1.8,z,gm);box(.35,4,1,5,1.8,z,gm);box(10,3,.25,0,1.5,z+depth*3,glass);}
+    goal(-26,0x168cff);goal(26,0xff4545);
+    function makeCar(color){
+      const group=new THREE.Group(), body=new THREE.Mesh(new THREE.BoxGeometry(2.15,.62,3.35),mat(color,.32,.35));body.position.y=.68;body.castShadow=true;group.add(body);
+      const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.45,.62,1.55),mat(0x9bdcff,.22,.35));cabin.position.set(0,1.25,-.15);cabin.castShadow=true;group.add(cabin);
+      const bumper=new THREE.Mesh(new THREE.BoxGeometry(2.2,.22,.35),black);bumper.position.set(0,.5,1.7);group.add(bumper);
+      for(const x of [-1.12,1.12])for(const z of [-1.05,1.05]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.39,.39,.25,16),black);wheel.rotation.z=Math.PI/2;wheel.position.set(x,.43,z);wheel.castShadow=true;group.add(wheel);}
+      const nose=new THREE.Mesh(new THREE.BoxGeometry(.5,.12,.12),mat(0xffffff));nose.position.set(0,.83,1.73);group.add(nose);
+      csScene.add(group);return group;
+    }
+    csCar=makeCar(0x168cff);csCar.position.set(0,0,15);
+    csBot=makeCar(0xff4545);csBot.position.set(0,0,-15);csBot.rotation.y=Math.PI;
+    csBall=new THREE.Mesh(new THREE.SphereGeometry(1.05,24,18),ballMat);csBall.position.set(0,1.15,0);csBall.castShadow=true;csScene.add(csBall);
+    const seams=new THREE.Mesh(new THREE.TorusGeometry(1.055,.025,6,24),black);seams.rotation.x=Math.PI/2;csBall.add(seams);
+    csScore=[0,0];csSeconds=90;csVelocity=0;csBotVelocity=0;csTouch={};csKeys={};csRunning=true;csLast=performance.now();csClock=0;
+    const keydown=e=>{csKeys[e.code]=true;if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code))e.preventDefault();};
+    const keyup=e=>{csKeys[e.code]=false;};
+    window.addEventListener("keydown",keydown);window.addEventListener("keyup",keyup);
+    csCleanup.push(()=>window.removeEventListener("keydown",keydown),()=>window.removeEventListener("keyup",keyup));
+    host.querySelector("canvas").addEventListener("click",()=>host.querySelector("canvas").focus());
+    document.querySelectorAll("[data-cs]").forEach(btn=>{
+      const k=btn.dataset.cs;
+      const down=e=>{e.preventDefault();csTouch[k]=true;};
+      const up=e=>{e.preventDefault();csTouch[k]=false;};
+      btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointerleave",up);btn.addEventListener("pointercancel",up);
+      csCleanup.push(()=>{btn.removeEventListener("pointerdown",down);btn.removeEventListener("pointerup",up);btn.removeEventListener("pointerleave",up);btn.removeEventListener("pointercancel",up);});
+    });
+    const resize=()=>{if(!csRenderer||!host.isConnected)return;const w=host.clientWidth;csCamera.aspect=w/(w*.625);csCamera.updateProjectionMatrix();csRenderer.setSize(w,w*.625,false);};
+    window.addEventListener("resize",resize);csCleanup.push(()=>window.removeEventListener("resize",resize));
+    carSoccerRestart();
+    csRunning=true;csLast=performance.now();csLoop(csLast);
+  }catch(err){
+    stopCarSoccer();
+    host.innerHTML='<p>Non riesco a caricare la grafica 3D. Controlla la connessione e riprova.</p><button onclick="carSoccerGame()">RIPROVA</button>';
+    console.error("Car Soccer 3D:",err);
+  }
+}
+function carSoccerRestart(){
+  if(!csCar||!csBall)return;
+  csScore=[0,0];csSeconds=90;csVelocity=0;csBotVelocity=0;
+  csCar.position.set(0,0,15);csCar.rotation.y=0;csBot.position.set(0,0,-15);csBot.rotation.y=Math.PI;
+  csBall.position.set(0,1.15,0);csBall.userData.vx=0;csBall.userData.vy=0;csBall.userData.vz=0;
+  const msg=document.getElementById("csMessage");if(msg)msg.textContent="Nuova partita! Vai a segnare!";
+  updateCarSoccerHud();
+}
+function updateCarSoccerHud(){
+  const s=document.getElementById("csScore"),t=document.getElementById("csTime"),b=document.getElementById("csBoost");
+  if(s)s.textContent="🔵 "+csScore[0]+" — "+csScore[1]+" 🔴";
+  if(t)t.textContent=""+String(Math.floor(csSeconds/60)).padStart(2,"0")+":"+String(Math.max(0,Math.ceil(csSeconds%60))).padStart(2,"0");
+  if(b)b.textContent="TURBO: "+Math.round((csCar?.userData.boost??100))+"%";
+}
+function csLoop(now){
+  if(!csRunning||!csThree)return;
+  const T=csThree,dt=Math.min(.04,(now-csLast)/1000);csLast=now;csClock+=dt;
+  if(csSeconds>0){
+    csSeconds=Math.max(0,csSeconds-dt);
+    const forward=csKeys.KeyW||csKeys.ArrowUp||csTouch.jump===false&&false;
+    const reverse=csKeys.KeyS||csKeys.ArrowDown||csTouch.reverse;
+    const left=csKeys.KeyA||csKeys.ArrowLeft||csTouch.left;
+    const right=csKeys.KeyD||csKeys.ArrowRight||csTouch.right;
+    const boost=csKeys.ShiftLeft||csKeys.ShiftRight||csTouch.boost;
+    const jump=csKeys.Space||csTouch.jump;
+    if(!csCar.userData.boost)csCar.userData.boost=100;
+    const accelerating=forward||reverse;
+    const maxSpeed=boost&&csCar.userData.boost>0?24:14;
+    if(boost&&csCar.userData.boost>0)csCar.userData.boost=Math.max(0,csCar.userData.boost-26*dt);else csCar.userData.boost=Math.min(100,csCar.userData.boost+9*dt);
+    if(forward)csVelocity=Math.min(maxSpeed,csVelocity+ (boost?23:12)*dt);
+    else if(reverse)csVelocity=Math.max(-8,csVelocity-14*dt);
+    else csVelocity*=Math.pow(.985,dt*60);
+    const steer=(left?1:0)-(right?1:0);
+    if(Math.abs(csVelocity)>.25)csCar.rotation.y+=steer*2.15*dt*Math.sign(csVelocity);
+    const dir=new T.Vector3(Math.sin(csCar.rotation.y),0,Math.cos(csCar.rotation.y));
+    csCar.position.addScaledVector(dir,csVelocity*dt);
+    csCar.position.x=T.MathUtils.clamp(csCar.position.x,-16,16);csCar.position.z=T.MathUtils.clamp(csCar.position.z,-24,24);
+    if(jump&&!csCar.userData.air)csCar.userData.air={v:8};
+    if(csCar.userData.air){csCar.userData.air.v-=19*dt;csCar.position.y+=csCar.userData.air.v*dt;if(csCar.position.y<=0){csCar.position.y=0;csCar.userData.air=null;}}
+    // Bot: insegue il pallone e prova a spingerlo verso la porta blu
+    const targetAngle=Math.atan2(csBall.position.x-csBot.position.x,csBall.position.z-csBot.position.z);
+    let angleDiff=Math.atan2(Math.sin(targetAngle-csBot.rotation.y),Math.cos(targetAngle-csBot.rotation.y));
+    csBot.rotation.y+=T.MathUtils.clamp(angleDiff,-1.7*dt,1.7*dt);
+    csBotVelocity=Math.min(10,csBotVelocity+8*dt);
+    const bd=new T.Vector3(Math.sin(csBot.rotation.y),0,Math.cos(csBot.rotation.y));
+    csBot.position.addScaledVector(bd,csBotVelocity*dt);
+    csBot.position.x=T.MathUtils.clamp(csBot.position.x,-16,16);csBot.position.z=T.MathUtils.clamp(csBot.position.z,-24,24);
+    // Urti auto-palla
+    const ball=csBall.position,v=csBall.userData;
+    function hitCar(car,power){const dx=ball.x-car.position.x,dz=ball.z-car.position.z,dist=Math.hypot(dx,dz);if(dist<2.25&&ball.y<3){const nx=dx/(dist||1),nz=dz/(dist||1);v.vx=(v.vx||0)+nx*power;v.vz=(v.vz||0)+nz*power;v.vy=Math.max(v.vy||0,2.2);}}
+    hitCar(csCar,Math.abs(csVelocity)*.75+5);hitCar(csBot,csBotVelocity*.8+4);
+    v.vy=(v.vy||0)-13*dt;ball.x+=(v.vx||0)*dt;ball.y+=(v.vy||0)*dt;ball.z+=(v.vz||0)*dt;
+    v.vx=(v.vx||0)*Math.pow(.992,dt*60);v.vz=(v.vz||0)*Math.pow(.992,dt*60);
+    if(ball.y<1.05){ball.y=1.05;v.vy=Math.abs(v.vy||0)*.68;}
+    if(Math.abs(ball.x)>16){ball.x=Math.sign(ball.x)*16;v.vx=-(v.vx||0)*.7;}
+    if(ball.z<-26.2||ball.z>26.2){
+      if(Math.abs(ball.x)<5.2){if(ball.z<0)csScore[1]++;else csScore[0]++;const msg=document.getElementById("csMessage");if(msg)msg.textContent=ball.z<0?"🔴 Il bot ha segnato!":"⚽ GOOOL! Hai segnato!";ball.set(0,1.15,0);v.vx=0;v.vy=0;v.vz=0;csCar.position.set(0,0,15);csBot.position.set(0,0,-15);csVelocity=0;csBotVelocity=0;}
+      else {ball.z=Math.sign(ball.z)*26.2;v.vz=-(v.vz||0)*.7;}
+    }
+    csCar.position.y=Math.max(0,csCar.position.y);
+    // Camera fluida dietro l'auto
+    const behind=new T.Vector3(-Math.sin(csCar.rotation.y)*10,6.3,-Math.cos(csCar.rotation.y)*10);
+    const camTarget=csCar.position.clone().add(behind);csCamera.position.lerp(camTarget,.12);
+    const look=csCar.position.clone().add(new T.Vector3(0,1.2,0)).addScaledVector(dir,7);csCamera.lookAt(look);
+    csRenderer.render(csScene,csCamera);updateCarSoccerHud();
+    if(csSeconds<=0){const msg=document.getElementById("csMessage");if(msg)msg.textContent="⏱️ Partita finita! "+(csScore[0]>csScore[1]?"Hai vinto!":csScore[0]<csScore[1]?"Ha vinto il bot.":"Pareggio!");}
+  }else{csRenderer.render(csScene,csCamera);}
+  csFrame=requestAnimationFrame(csLoop);
 }
 
 document.getElementById("search").addEventListener("input", filterGames);
