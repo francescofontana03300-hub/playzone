@@ -318,7 +318,8 @@ footer a { color: #a78bfa; }
     <button class="category active" data-filter="all">Tutti</button>
     <button class="category" data-filter="arcade">Arcade</button>
     <button class="category" data-filter="brain">Logica</button>
-    <button class="category" data-filter="skill">Abilità</button>\n    <button class="category" data-filter="football">Calcio</button>
+    <button class="category" data-filter="skill">Abilità</button>
+    <button class="category" data-filter="football">Calcio</button>
   </div>
 
   <div class="games" id="gameList">
@@ -407,7 +408,8 @@ function openGame(type) {
 
   if (type === "reaction") reactionGame();
   if (type === "number") numberGame();
-  if (type === "click") clickGame();\n  if (type === "football") footballGame();
+  if (type === "click") clickGame();
+  if (type === "football") footballGame();
 
   area.scrollIntoView({behavior:"smooth", block:"start"});
 }
@@ -633,7 +635,8 @@ function checkFootballAnswer() {
     }
   }
 }
-\ndocument.getElementById("search").addEventListener("input", filterGames);
+
+document.getElementById("search").addEventListener("input", filterGames);
 
 let activeFilter = "all";
 
