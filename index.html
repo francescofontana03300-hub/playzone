@@ -1,0 +1,595 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#090914">
+<meta name="description" content="PlayZone: giochi online gratuiti. Entra, scegli il tuo gioco e divertiti!">
+<title>PlayZone - Free Online Games</title>
+
+<style>
+:root {
+  --bg: #090914;
+  --panel: #15152a;
+  --purple: #8b5cf6;
+  --blue: #2563eb;
+  --text: #ffffff;
+  --muted: #aaaac2;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+}
+
+header {
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #292944;
+  background: #101020;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo {
+  font-size: 25px;
+  font-weight: 900;
+  color: #a78bfa;
+  text-shadow: 0 0 15px #8b5cf6;
+}
+
+.logo span { color: #38bdf8; }
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 13px;
+  margin-left: 10px;
+}
+
+.hero {
+  padding: 55px 20px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at top, #332064 0%, transparent 65%),
+    linear-gradient(140deg, #11112a, #090914);
+}
+
+.hero h1 {
+  font-size: clamp(34px, 9vw, 58px);
+  margin: 0 0 15px;
+  line-height: 1.1;
+}
+
+.hero h1 span {
+  color: #a78bfa;
+  text-shadow: 0 0 20px #8b5cf6;
+}
+
+.hero p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.main-button, .play-button {
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
+  border: 0;
+  color: white;
+  padding: 13px 22px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 35px;
+  margin-top: 28px;
+}
+
+.stats strong {
+  display: block;
+  font-size: 22px;
+  color: #a78bfa;
+}
+
+.stats small { color: var(--muted); }
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 28px 16px;
+}
+
+.section-title {
+  font-size: 23px;
+  margin-bottom: 18px;
+}
+
+.search {
+  width: 100%;
+  background: #17172b;
+  border: 1px solid #343450;
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 15px;
+  outline: none;
+}
+
+.search:focus { border-color: #8b5cf6; }
+
+.categories {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+}
+
+.category {
+  background: #19192e;
+  color: white;
+  border: 1px solid #33334e;
+  border-radius: 30px;
+  padding: 9px 15px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.category.active {
+  background: #713be0;
+  border-color: #a78bfa;
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.game-card {
+  background: var(--panel);
+  border: 1px solid #292944;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: .2s;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 20px #713be033;
+}
+
+.game-image {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  font-size: 53px;
+  background: linear-gradient(140deg, #272052, #10234a);
+}
+
+.game-info { padding: 13px; }
+
+.game-info h3 {
+  margin: 0 0 7px;
+  font-size: 16px;
+}
+
+.game-info p {
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 30px;
+  line-height: 1.4;
+}
+
+.play-button {
+  width: 100%;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.empty {
+  display: none;
+  color: var(--muted);
+  text-align: center;
+  padding: 30px;
+}
+
+#gameArea {
+  display: none;
+  margin-top: 25px;
+  padding: 20px;
+  background: #17172b;
+  border: 1px solid #6240ad;
+  border-radius: 15px;
+  text-align: center;
+}
+
+#gameArea h2 { color: #c4b5fd; }
+
+.game-content {
+  margin: 20px auto;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.game-content button {
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
+  color: white;
+  border: 0;
+  border-radius: 9px;
+  padding: 13px 20px;
+  margin: 5px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.game-content input {
+  padding: 12px;
+  width: 100px;
+  background: #090914;
+  border: 1px solid #8b5cf6;
+  border-radius: 8px;
+  color: white;
+  font-size: 18px;
+  text-align: center;
+}
+
+#reactionBox {
+  background: #302044;
+  border-radius: 12px;
+  padding: 45px 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+footer {
+  border-top: 1px solid #292944;
+  text-align: center;
+  padding: 28px 15px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+footer a { color: #a78bfa; }
+
+@media (min-width: 700px) {
+  .games { grid-template-columns: repeat(3, 1fr); }
+  .hero { padding: 85px 20px; }
+  .game-image { min-height: 160px; }
+}
+
+@media (max-width: 360px) {
+  nav a { font-size: 11px; margin-left: 5px; }
+  .games { gap: 9px; }
+  .game-info { padding: 9px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">PLAY<span>ZONE</span></div>
+  <nav>
+    <a href="#home">Home</a>
+    <a href="#games">Giochi</a>
+  </nav>
+</header>
+
+<section class="hero" id="home">
+  <h1>WELCOME TO<br><span>PLAYZONE</span></h1>
+  <p>Il tuo mondo di giochi online gratuiti.<br>
+  Scegli, gioca e supera i tuoi record!</p>
+  <button class="main-button"
+    onclick="document.getElementById('games').scrollIntoView({behavior:'smooth'})">
+    🎮 GIOCA ORA
+  </button>
+
+  <div class="stats">
+    <div><strong>3</strong><small>Giochi</small></div>
+    <div><strong>100%</strong><small>Gratis</small></div>
+    <div><strong>24/7</strong><small>Online</small></div>
+  </div>
+</section>
+
+<main class="container" id="games">
+  <h2 class="section-title">🔥 Scopri i giochi</h2>
+
+  <input class="search" id="search"
+    type="search" placeholder="🔍 Cerca un gioco..."
+    aria-label="Cerca un gioco">
+
+  <div class="categories">
+    <button class="category active" data-filter="all">Tutti</button>
+    <button class="category" data-filter="arcade">Arcade</button>
+    <button class="category" data-filter="brain">Logica</button>
+    <button class="category" data-filter="skill">Abilità</button>
+  </div>
+
+  <div class="games" id="gameList">
+
+    <article class="game-card" data-category="arcade">
+      <div class="game-image">⚡</div>
+      <div class="game-info">
+        <h3>Reaction Test</h3>
+        <p>Quanto velocemente reagisci?</p>
+        <button class="play-button" onclick="openGame('reaction')">
+          GIOCA ORA
+        </button>
+      </div>
+    </article>
+
+    <article class="game-card" data-category="brain">
+      <div class="game-image">🧠</div>
+      <div class="game-info">
+        <h3>Indovina il numero</h3>
+        <p>Riesci a trovare il numero segreto?</p>
+        <button class="play-button" onclick="openGame('number')">
+          GIOCA ORA
+        </button>
+      </div>
+    </article>
+
+    <article class="game-card" data-category="skill">
+      <div class="game-image">🎯</div>
+      <div class="game-info">
+        <h3>Click Challenge</h3>
+        <p>Quanti click riesci a fare in 10 secondi?</p>
+        <button class="play-button" onclick="openGame('click')">
+          GIOCA ORA
+        </button>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="empty" id="empty">Nessun gioco trovato.</div>
+
+  <section id="gameArea">
+    <h2 id="gameTitle">Gioco</h2>
+    <div class="game-content" id="gameContent"></div>
+    <button class="main-button" onclick="closeGame()">✕ Chiudi gioco</button>
+  </section>
+</main>
+
+<footer>
+  <div class="logo">PLAY<span>ZONE</span></div>
+  <p>Il divertimento inizia qui!</p>
+  <p>© <span id="year"></span> PlayZone. Tutti i diritti riservati.</p>
+  <p>Progetto indipendente di giochi online.</p>
+</footer>
+
+<script>
+const area = document.getElementById("gameArea");
+const content = document.getElementById("gameContent");
+const title = document.getElementById("gameTitle");
+
+let timer = null;
+let gameTimeout = null;
+let started = false;
+let clicks = 0;
+let secret = 0;
+let attempts = 0;
+let reactionStart = 0;
+let best = Number(localStorage.getItem("pzBest") || 0);
+
+document.getElementById("year").textContent =
+  new Date().getFullYear();
+
+function openGame(type) {
+  clearTimeout(timer);
+  clearTimeout(gameTimeout);
+  area.style.display = "block";
+
+  if (type === "reaction") reactionGame();
+  if (type === "number") numberGame();
+  if (type === "click") clickGame();
+
+  area.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function closeGame() {
+  clearTimeout(timer);
+  clearTimeout(gameTimeout);
+  area.style.display = "none";
+  content.innerHTML = "";
+}
+
+function reactionGame() {
+  title.textContent = "⚡ Reaction Test";
+  content.innerHTML = `
+    <p>Premi il pulsante appena diventa verde!</p>
+    <div id="reactionBox" role="button" tabindex="0">
+      Premi INIZIA per cominciare
+    </div>
+    <p id="reactionResult">Il tuo record: ${best} ms</p>
+    <button onclick="startReaction()">INIZIA</button>
+  `;
+
+  started = false;
+}
+
+function startReaction() {
+  clearTimeout(timer);
+  const box = document.getElementById("reactionBox");
+  const result = document.getElementById("reactionResult");
+
+  started = false;
+  box.style.background = "#302044";
+  box.textContent = "Aspetta il verde...";
+  result.textContent = "";
+
+  timer = setTimeout(() => {
+    started = true;
+    reactionStart = performance.now();
+    box.style.background = "#15803d";
+    box.textContent = "ORA! TOCCA QUI!";
+  }, 1500 + Math.random() * 3500);
+
+  box.onclick = () => {
+    if (!started) {
+      clearTimeout(timer);
+      box.textContent = "Troppo presto! Riprova.";
+      box.style.background = "#991b1b";
+      return;
+    }
+
+    const time = Math.round(performance.now() - reactionStart);
+    started = false;
+
+    if (!best || time < best) {
+      best = time;
+      localStorage.setItem("pzBest", best);
+    }
+
+    box.textContent = time + " ms";
+    box.style.background = "#302044";
+    result.textContent = "Il tuo record: " + best + " ms";
+  };
+}
+
+function numberGame() {
+  title.textContent = "🧠 Indovina il numero";
+  secret = Math.floor(Math.random() * 100) + 1;
+  attempts = 0;
+
+  content.innerHTML = `
+    <p>Sto pensando a un numero da 1 a 100.</p>
+    <input id="guess" type="number" min="1" max="100"
+      placeholder="?" aria-label="Il tuo numero">
+    <button onclick="checkNumber()">PROVA</button>
+    <p id="numberResult">Hai 7 tentativi!</p>
+    <p id="attemptCount">Tentativi: 0/7</p>
+    <button onclick="numberGame()">NUOVA PARTITA</button>
+  `;
+}
+
+function checkNumber() {
+  const input = document.getElementById("guess");
+  const result = document.getElementById("numberResult");
+  const counter = document.getElementById("attemptCount");
+  const value = Number(input.value);
+
+  if (!input.value || value < 1 || value > 100 ||
+      !Number.isInteger(value)) {
+    result.textContent = "Inserisci un numero valido da 1 a 100.";
+    return;
+  }
+
+  if (attempts >= 7) return;
+
+  attempts++;
+
+  if (value === secret) {
+    result.textContent = "🎉 BRAVO! Hai indovinato!";
+    input.disabled = true;
+  } else if (attempts >= 7) {
+    result.textContent = "Partita finita! Il numero era " + secret;
+    input.disabled = true;
+  } else {
+    result.textContent = value < secret ? "Troppo basso! ⬆️" :
+      "Troppo alto! ⬇️";
+  }
+
+  counter.textContent = "Tentativi: " + attempts + "/7";
+}
+
+function clickGame() {
+  title.textContent = "🎯 Click Challenge";
+  clicks = 0;
+  started = false;
+
+  content.innerHTML = `
+    <h2 id="clickCount">0</h2>
+    <p id="clickMessage">Hai 10 secondi per fare più click possibile!</p>
+    <p id="clickTimer">Tempo: 10 secondi</p>
+    <button id="clickButton" onclick="makeClick()">INIZIA!</button>
+  `;
+}
+
+function makeClick() {
+  const button = document.getElementById("clickButton");
+  const count = document.getElementById("clickCount");
+  const message = document.getElementById("clickMessage");
+  const time = document.getElementById("clickTimer");
+
+  if (!started) {
+    clicks = 0;
+    started = true;
+    let seconds = 10;
+
+    button.textContent = "CLICCA!";
+    count.textContent = "0";
+    message.textContent = "VAI! VAI! VAI!";
+
+    timer = setInterval(() => {
+      seconds--;
+      time.textContent = "Tempo: " + seconds + " secondi";
+
+      if (seconds <= 0) {
+        clearInterval(timer);
+        started = false;
+        button.textContent = "RIGIOCA";
+        message.textContent = "🏆 Hai fatto " + clicks + " click!";
+      }
+    }, 1000);
+    return;
+  }
+
+  clicks++;
+  count.textContent = clicks;
+}
+
+document.getElementById("search").addEventListener("input", filterGames);
+
+let activeFilter = "all";
+
+function filterGames() {
+  const query = document.getElementById("search").value.toLowerCase();
+  let visible = 0;
+
+  document.querySelectorAll(".game-card").forEach(card => {
+    const matchesText = card.textContent.toLowerCase().includes(query);
+    const matchesCategory =
+      activeFilter === "all" ||
+      card.dataset.category === activeFilter;
+
+    card.style.display = matchesText && matchesCategory ? "" : "none";
+
+    if (matchesText && matchesCategory) visible++;
+  });
+
+  document.getElementById("empty").style.display =
+    visible ? "none" : "block";
+}
+
+document.querySelectorAll(".category").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".category").forEach(item =>
+      item.classList.remove("active")
+    );
+
+    button.classList.add("active");
+    activeFilter = button.dataset.filter;
+    filterGames();
+  });
+});
+</script>
+
+</body>
+</html>
