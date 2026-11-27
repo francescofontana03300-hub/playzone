@@ -278,6 +278,13 @@ footer a { color: #a78bfa; }
   .games { gap: 9px; }
   .game-info { padding: 9px; }
 }
+
+#fpsWrap {max-width:760px;margin:12px auto;color:#e5e7eb}
+#fpsHud {display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:bold;font-size:13px;margin-bottom:9px}
+#fpsCanvas {display:block;width:100%;aspect-ratio:16/10;background:#101b25;border:2px solid #536477;border-radius:12px;touch-action:none}
+#fpsControls {display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+#fpsControls button {min-width:105px;min-height:48px;font-weight:900}
+#fpsHelp {font-size:13px;color:#b8c5d1}
 </style>
 </head>
 
@@ -366,6 +373,15 @@ footer a { color: #a78bfa; }
       </div>
     </article>
 
+    <article class="game-card" data-category="arcade">
+      <div class="game-image">🕹️</div>
+      <div class="game-info">
+        <h3>FPS Retro Arcade</h3>
+        <p>Entra nell'arena in prima persona e centra i droni bersaglio!</p>
+        <button class="play-button" onclick="openGame('fps')">GIOCA ORA</button>
+      </div>
+    </article>
+
   </div>
 
   <div class="empty" id="empty">Nessun gioco trovato.</div>
@@ -410,11 +426,13 @@ function openGame(type) {
   if (type === "number") numberGame();
   if (type === "click") clickGame();
   if (type === "football") footballGame();
+  if (type === "fps") fpsGame();
 
   area.scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 function closeGame() {
+  stopFpsGame();
   clearTimeout(timer);
   clearTimeout(gameTimeout);
   area.style.display = "none";
@@ -634,6 +652,51 @@ function checkFootballAnswer() {
       setTimeout(()=>{footballIndex++;showFootballRound();},1800);
     }
   }
+}
+
+
+let fpsFrame=0, fpsRunning=false, fpsLast=0, fpsTime=45, fpsScore=0, fpsTargets=[], fpsAimX=0.5, fpsAimY=0.48, fpsCanvas=null, fpsCtx=null;
+function stopFpsGame(){fpsRunning=false;if(fpsFrame)cancelAnimationFrame(fpsFrame);fpsFrame=0;}
+function fpsGame(){
+ stopFpsGame(); title.textContent="🕹️ FPS Retro Arcade";
+ fpsScore=0;fpsTime=45;fpsAimX=.5;fpsAimY=.48;fpsTargets=[];fpsRunning=false;
+ content.innerHTML='<div id="fpsWrap"><div id="fpsHud"><span id="fpsScore">PUNTI: 0</span><span id="fpsTime">TEMPO: 45</span><span>ARENA 01</span></div><canvas id="fpsCanvas" width="900" height="560" aria-label="Arena arcade in prima persona con droni bersaglio"></canvas><p id="fpsHelp">Trascina sullo schermo per mirare. Premi IMPULSO quando il mirino è sul bersaglio.</p><div id="fpsControls"><button onclick="fpsFire()">⚡ IMPULSO</button><button onclick="fpsStart()">▶ INIZIA</button></div><p id="fpsMsg">Pronto? Hai 45 secondi per centrare più droni possibile!</p></div>';
+ fpsCanvas=document.getElementById("fpsCanvas");fpsCtx=fpsCanvas.getContext("2d");
+ fpsCanvas.addEventListener("pointermove",e=>{const r=fpsCanvas.getBoundingClientRect();fpsAimX=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));fpsAimY=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));});
+ fpsCanvas.addEventListener("pointerdown",e=>{const r=fpsCanvas.getBoundingClientRect();fpsAimX=(e.clientX-r.left)/r.width;fpsAimY=(e.clientY-r.top)/r.height;});
+ fpsDraw();
+}
+function fpsStart(){
+ stopFpsGame();fpsScore=0;fpsTime=45;fpsLast=performance.now();fpsRunning=true;fpsTargets=[];
+ for(let i=0;i<5;i++)fpsTargets.push({x:Math.random()*.8+.1,y:Math.random()*.45+.15,z:Math.random()*.5+.5,dx:(Math.random()-.5)*.24,dy:(Math.random()-.5)*.12,phase:Math.random()*6});
+ document.getElementById("fpsMsg").textContent="Arena attiva! Centra i droni e accumula punti.";
+ fpsTick(performance.now());
+}
+function fpsTick(now){
+ if(!fpsRunning)return;const dt=Math.min(.05,(now-fpsLast)/1000);fpsLast=now;fpsTime-=dt;
+ fpsTargets.forEach(t=>{t.x+=t.dx*dt;t.y+=t.dy*dt;t.phase+=dt*2;if(t.x<.08||t.x>.92)t.dx*=-1;if(t.y<.12||t.y>.68)t.dy*=-1;});
+ document.getElementById("fpsTime").textContent="TEMPO: "+Math.max(0,Math.ceil(fpsTime));
+ document.getElementById("fpsScore").textContent="PUNTI: "+fpsScore;
+ fpsDraw();
+ if(fpsTime<=0){stopFpsGame();document.getElementById("fpsMsg").textContent="⏱️ Tempo finito! Punteggio: "+fpsScore+" — premi INIZIA per riprovare.";return;}
+ fpsFrame=requestAnimationFrame(fpsTick);
+}
+function fpsDraw(){
+ if(!fpsCtx)return;const c=fpsCanvas,w=c.width,h=c.height,g=fpsCtx;
+ const sky=g.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#101a2b");sky.addColorStop(.58,"#26394a");sky.addColorStop(1,"#111923");g.fillStyle=sky;g.fillRect(0,0,w,h);
+ g.fillStyle="#182b35";g.fillRect(0,h*.57,w,h*.43);
+ g.strokeStyle="#526b78";g.lineWidth=2;g.beginPath();for(let i=-8;i<=8;i++){g.moveTo(w/2+i*15,h*.58);g.lineTo(w/2+i*95,h);}for(let j=0;j<7;j++){let y=h*.59+Math.pow(j/6,1.8)*h*.4;g.moveTo(0,y);g.lineTo(w,y);}g.stroke();
+ g.fillStyle="#91a9b5";g.fillRect(0,h*.56,w,3);
+ fpsTargets.forEach(t=>{const x=t.x*w,y=(t.y+Math.sin(t.phase)*.018)*h,r=15+t.z*24;g.save();g.shadowColor="#48e5ff";g.shadowBlur=18;g.fillStyle="#203d50";g.strokeStyle="#5be8ff";g.lineWidth=4;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();g.stroke();g.shadowBlur=0;g.strokeStyle="#d8fbff";g.lineWidth=3;g.beginPath();g.arc(x,y,r*.48,0,Math.PI*2);g.stroke();g.fillStyle="#75f3ff";g.beginPath();g.arc(x,y,4,0,Math.PI*2);g.fill();g.restore();});
+ const ax=fpsAimX*w,ay=fpsAimY*h;g.strokeStyle="#fff";g.lineWidth=3;g.beginPath();g.arc(ax,ay,17,0,Math.PI*2);g.moveTo(ax-27,ay);g.lineTo(ax-9,ay);g.moveTo(ax+9,ay);g.lineTo(ax+27,ay);g.moveTo(ax,ay-27);g.lineTo(ax,ay-9);g.moveTo(ax,ay+9);g.lineTo(ax,ay+27);g.stroke();
+}
+function fpsFire(){
+ if(!fpsRunning){document.getElementById("fpsMsg").textContent="Premi INIZIA prima di giocare.";return;}
+ const ax=fpsAimX,ay=fpsAimY;let hit=-1,bestDist=.09;
+ fpsTargets.forEach((t,i)=>{const d=Math.hypot(t.x-ax,t.y-ay);if(d<bestDist){bestDist=d;hit=i;}});
+ if(hit>=0){fpsScore+=10;fpsTargets.splice(hit,1);fpsTargets.push({x:Math.random()*.8+.1,y:Math.random()*.45+.15,z:Math.random()*.5+.5,dx:(Math.random()-.5)*.24,dy:(Math.random()-.5)*.12,phase:Math.random()*6});document.getElementById("fpsMsg").textContent="✨ Bersaglio centrato! +10 punti";}
+ else document.getElementById("fpsMsg").textContent="Mancato! Sposta il mirino e riprova.";
+ document.getElementById("fpsScore").textContent="PUNTI: "+fpsScore;fpsDraw();
 }
 
 document.getElementById("search").addEventListener("input", filterGames);
